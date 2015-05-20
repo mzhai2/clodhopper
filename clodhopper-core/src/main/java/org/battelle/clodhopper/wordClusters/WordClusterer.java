@@ -61,7 +61,7 @@ public class WordClusterer {
 
     private static Map<Integer, String> createDict(String matrix, String path) {
         try {
-            BufferedReader br = new BufferedReader(new FileReader(path+matrix+".data"));
+            BufferedReader br = new BufferedReader(new FileReader(path+matrix));
 
             Map<Integer, String> dict = new HashMap<>();
             String line;
@@ -81,7 +81,7 @@ public class WordClusterer {
             if (new File(path + matrix + ".csv").exists())
                 continue;
             try {
-                BufferedReader br = new BufferedReader(new FileReader(path + matrix + ".data"));
+                BufferedReader br = new BufferedReader(new FileReader(path + matrix));
                 BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + ".csv"));
                 String line;
                 while ((line = br.readLine()) != null) {
@@ -152,7 +152,7 @@ public class WordClusterer {
                             List<Cluster> clusters = gMeans.get();
                             final int clusterCount = clusters.size();
                             System.out.printf("\nG-Means Generated %d Clusters\n\n", clusterCount);
-                            BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + "." + threshold + ".cluster"));
+                            BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + metric + threshold + ".cluster"));
                             for (int i = 0; i < clusterCount; i++) {
                                 Cluster c = clusters.get(i);
                                 StringBuilder sb = new StringBuilder();
@@ -234,7 +234,7 @@ public class WordClusterer {
                                 List<Cluster> clusters = xMeans.get();
                                 final int clusterCount = clusters.size();
                                 System.out.printf("\nG-Means Generated %d Clusters\n\n", clusterCount);
-                                BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + "." + threshold + ".cluster"));
+                                BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + metric + threshold + bic + ".cluster"));
                                 for (int i = 0; i < clusterCount; i++) {
                                     Cluster c = clusters.get(i);
                                     StringBuilder sb = new StringBuilder();
@@ -316,7 +316,7 @@ public class WordClusterer {
                                 List<Cluster> clusters = jarvisPatrick.get();
                                 final int clusterCount = clusters.size();
                                 System.out.printf("\nG-Means Generated %d Clusters\n\n", clusterCount);
-                                BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + "." + threshold + ".cluster"));
+                                BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + metric + threshold + mutual + ".cluster"));
                                 for (int i = 0; i < clusterCount; i++) {
                                     Cluster c = clusters.get(i);
                                     StringBuilder sb = new StringBuilder();
