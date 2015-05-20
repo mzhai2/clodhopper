@@ -14,8 +14,6 @@ import org.battelle.clodhopper.examples.ui.NumberDocument;
 import org.battelle.clodhopper.examples.ui.ParamsPanel;
 import org.battelle.clodhopper.examples.ui.ParamsPanelException;
 import org.battelle.clodhopper.examples.ui.UIUtils;
-import org.battelle.clodhopper.gmeans.*;
-import org.battelle.clodhopper.kmeans.*;
 import org.battelle.clodhopper.seeding.ClusterSeeder;
 import org.battelle.clodhopper.seeding.KDTreeSeeder;
 import org.battelle.clodhopper.seeding.KMeansPlusPlusSeeder;

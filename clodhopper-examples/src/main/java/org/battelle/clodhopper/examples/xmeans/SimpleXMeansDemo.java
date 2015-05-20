@@ -16,7 +16,7 @@ import org.battelle.clodhopper.xmeans.XMeansClusterer;
 import org.battelle.clodhopper.xmeans.XMeansParams;
 
 /**
- * This is a simple example of how to cluster data using an XMeansClusterer.  
+ * This is a simple example of how to cluster data using an XMeansClusterer.
  * 
  * @author R. Scarberry
  *

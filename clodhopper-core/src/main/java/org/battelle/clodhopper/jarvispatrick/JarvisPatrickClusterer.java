@@ -42,7 +42,7 @@ import org.battelle.clodhopper.util.ArrayIntIterator;
  * 
  * -------------------------------------------------------------------- 
  * *
- * JarvisPatrickClusterer.java
+ * XMeansClusterer.java
  *
  *===================================================================*/
 /**

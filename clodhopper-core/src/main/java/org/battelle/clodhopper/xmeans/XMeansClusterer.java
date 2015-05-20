@@ -38,7 +38,7 @@ import org.battelle.clodhopper.tuple.TupleList;
  *
  *===================================================================*/
 
-public class XMeansClusterer extends KMeansSplittingClusterer 
+public class XMeansClusterer extends KMeansSplittingClusterer
 	implements Clusterer {
 
 	private double overallBIC;
