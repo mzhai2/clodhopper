@@ -132,8 +132,9 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
             
             List<Cluster> workingList = null;
             
-            if (initialClusterSeeds != null || minClusters > 1) {
-            	
+//            if (initialClusterSeeds != null || minClusters > 1) {
+            if (initialClusterSeeds != null || minClusters >= 1) {
+
                 int initialSeeds = initialClusterSeeds != null ? 
             			initialClusterSeeds.getTupleCount() : 0;
             	
@@ -164,7 +165,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                 
             	workingList = new ArrayList<Cluster> ();
             	double[] center = TupleMath.average(tuples, new ArrayIntIterator(allIDs));           	
-            	workingList.add(new Cluster(allIDs, center));
+//            	workingList.add(new Cluster(allIDs, center));
             
             }
             
@@ -188,6 +189,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                     this.checkForCancel();
                     Cluster cluster = workingList.get(i);
                     if (!isUnsplittable(cluster)) {
+//                        System.out.println("going to split " + cluster.getId());
                         splitterList.add(new SplitCallable(cluster, createSplitter(workingList, cluster)));
                     } else {
                         addToCurrentClusters(cluster);
@@ -205,6 +207,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                             } else if (clist.size() == 1) {
                                 Cluster[] c = clist.toArray(new Cluster[1]);
                                 addToUnsplittables(c[0]);
+//                                System.out.println("unsplittable " + c[0].getId());
                             }
                         }
                     } else {
@@ -250,7 +253,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                 finalSeeds.setTuple(i, workingList.get(i).getCenter());
             }
             
-            workingList = null;
+//            workingList = null;
             currentClusters = null;
             
             ph.postMessage("performing final round of k-means to polish up clusters");
@@ -263,8 +266,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
             	.distanceMetric(params.getDistanceMetric())
             	.clusterSeeder(new PreassignedSeeder(finalSeeds))
             	.build();
-            
-            localKMeans = new KMeansClusterer(tuples, kparams);
+            localKMeans = new KMeansClusterer(tuples, kparams, workingList);
             localKMeans.addTaskListener(new TaskAdapter() {
                 @Override
                 public void taskMessage(TaskEvent e) {
@@ -317,7 +319,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                     
                     kparams.setClusterSeeder(new PreassignedSeeder(finalSeeds));
                     
-                    localKMeans = new KMeansClusterer(tuples, kparams);
+                    localKMeans = new KMeansClusterer(tuples, kparams, bigEnough);
                     
                     localKMeans.run();
                     
@@ -336,10 +338,19 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                 threadPool.shutdownNow();
             }
         }
-
+        cleanID(clusters);
         return clusters;
 	}
-	
+
+    private void cleanID(List<Cluster> clusters) {
+        for (Cluster cluster : clusters) {
+            String id = cluster.getId();
+            char code = (char)Integer.parseInt(id.substring(0, id.indexOf("-"))+33);
+//            System.out.println(code);
+            cluster.setId(Character.toString(code)+id.substring(id.indexOf("-")+1).replaceAll("-", ""));
+        }
+    }
+
     public boolean cancel(boolean mayInterruptIfRunning) {
         if (super.cancel(mayInterruptIfRunning)) {
             if (localKMeans != null) {
@@ -365,13 +376,15 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
         Iterator<Cluster> it = clusters.iterator();
         int numClusters = currentClusters.size();
         while(numClusters < maxClusters && it.hasNext()) {
-            currentClusters.add(it.next());
+            Cluster nextCluster = it.next();
+            currentClusters.add(nextCluster);
             numClusters++;
         }
     }
 
     private void addToCurrentClusters(Cluster cluster) {
         if (currentClusters.size() < maxClusters) {
+//            System.out.println("addToCurrentClusters " + cluster.getId());
             currentClusters.add(cluster);
         }
     }

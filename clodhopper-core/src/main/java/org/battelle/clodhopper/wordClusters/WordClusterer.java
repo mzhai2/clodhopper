@@ -35,10 +35,10 @@ public class WordClusterer {
 
     public static void main(String[] args) throws UnsupportedEncodingException {
 //        String path = URLDecoder.decode(WordClusterer.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
-//        String path = "/Users/mike/Desktop/cluster/";
-//        String[] matrices = {"10000x300"};
-        String path = "/home/mzhai/cluster/";
-        String[] matrices = {"glove.6B.300d"};
+        String path = "/Users/mike/Desktop/cluster/";
+        String[] matrices = {"10000x300"};
+//        String path = "/home/mzhai/cluster/";
+//        String[] matrices = {"glove.6B.300d"};
 
         List<DistanceMetric> metrics = new ArrayList<>();
         metrics.add(new CosineDistanceMetric());
@@ -85,11 +85,26 @@ public class WordClusterer {
                 BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + ".csv"));
                 String line;
                 while ((line = br.readLine()) != null) {
-                    line = line.substring(line.indexOf(" ") + 1).replace(' ', ',');
-                    bw.write(line);
+                    line = line.substring(line.indexOf(" ") + 1);
+                    String[] valuesStr = line.split(" ");
+                    double sum = 0;
+                    for (String valueStr : valuesStr) {
+                        double value = Double.parseDouble(valueStr);
+                        sum += value;
+                    }
+                    double mean = sum/valuesStr.length;
+                    for (int i=0;i<valuesStr.length;i++) {
+                        String valueStr = valuesStr[i];
+                        bw.write(Double.toString(Double.parseDouble(valueStr)-mean));
+                        if (i == valuesStr.length-1)
+                            bw.write('\n');
+                        else {
+                            bw.write(", ");
+                        }
+                    }
                     bw.flush();
-                    bw.write('\n');
                 }
+                bw.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -107,9 +122,9 @@ public class WordClusterer {
                         TupleList tuples = TupleIO.loadCSV(new File(path + matrix + ".csv"), "myData", factory);
                         GMeansParams.Builder builder = new GMeansParams.Builder();
                         GMeansParams params = builder.clusterSeeder(new KMeansPlusPlusSeeder(metric))
-                                .maxClusters(tuples.getTupleCount() / 50)
+                                .maxClusters(tuples.getTupleCount())
                                 .distanceMetric(metric)
-                                .minClusters(1)
+                                .minClusters(200)
                                 .minClusterToMeanThreshold(threshold.doubleValue())
                                 .workerThreadCount(Runtime.getRuntime().availableProcessors())
                                 .build();
@@ -146,6 +161,7 @@ public class WordClusterer {
                             }
                         });
                         Thread t = new Thread(gMeans);
+                        System.out.println("Starting with " + Runtime.getRuntime().availableProcessors() + " threads");
                         t.start();
                         t.join();
                         if (gMeans.getTaskOutcome() == TaskOutcome.SUCCESS) {
@@ -188,9 +204,9 @@ public class WordClusterer {
                             TupleList tuples = TupleIO.loadCSV(new File(path + matrix + ".csv"), "myData", factory);
                             XMeansParams.Builder builder = new XMeansParams.Builder();
                             XMeansParams params = builder.clusterSeeder(new KMeansPlusPlusSeeder(metric))
-                                    .maxClusters(tuples.getTupleCount() / 50)
+                                    .maxClusters(tuples.getTupleCount())
                                     .distanceMetric(metric)
-                                    .minClusters(1)
+                                    .minClusters(200)
                                     .minClusterToMeanThreshold(threshold.doubleValue())
                                     .workerThreadCount(Runtime.getRuntime().availableProcessors())
                                     .userOverallBIC(bo)

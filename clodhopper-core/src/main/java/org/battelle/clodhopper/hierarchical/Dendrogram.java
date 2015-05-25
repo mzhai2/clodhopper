@@ -844,7 +844,7 @@ public class Dendrogram implements Externalizable {
         for (int i = 0; i < numClusters; i++) {
             int[] members = clusterGroups.get(i);
             double[] center = TupleMath.average(tuples, new ArrayIntIterator(members));
-            clusters.add(new Cluster(members, center));
+//            clusters.add(new Cluster(members, center));
         }
 
         return clusters;

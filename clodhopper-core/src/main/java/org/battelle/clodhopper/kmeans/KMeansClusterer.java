@@ -86,6 +86,15 @@ public class KMeansClusterer extends AbstractClusterer {
         this.tuples = tuples;
         this.params = params;
     }
+    private List<Cluster> clusters;
+    public KMeansClusterer(TupleList tuples, KMeansParams params, List<Cluster> clusters) {
+        if (tuples == null || params == null) {
+            throw new NullPointerException();
+        }
+        this.tuples = tuples;
+        this.params = params;
+        this.clusters = clusters;
+    }
 
     @Override
     public String taskName() {
@@ -131,20 +140,17 @@ public class KMeansClusterer extends AbstractClusterer {
 
             // The trivial case.  No work to do, since everything is to be in 1 cluster.
             //
-            if (actualClusterCount == 1) {
-
-                ProtoCluster cluster = protoClusters[0];
-              
-                // Add them all to the protocluster.
-                cluster.ensureCurrentCapacity(tupleCount);
-                for (int i = 0; i < tupleCount; i++) {
-                    cluster.add(i);
-                }
-                
-                cluster.updateCenter(tuples);
-
-            } else {
-
+//            if (actualClusterCount == 1) {
+//                ProtoCluster cluster = protoClusters[0];
+//
+//                // Add them all to the protocluster.
+//                cluster.ensureCurrentCapacity(tupleCount);
+//                for (int i = 0; i < tupleCount; i++) {
+//                    cluster.add(i);
+//                }
+//                cluster.updateCenter(tuples);
+//            } else {
+            if (true) {
                 // Determine the number of worker threads for concurrent subtasks.
                 final int workerCount = params.getWorkerThreadCount() > 0 ? 
                     params.getWorkerThreadCount() : Runtime.getRuntime().availableProcessors();
@@ -255,7 +261,8 @@ public class KMeansClusterer extends AbstractClusterer {
                 if (!cluster.isEmpty()) {
                     int[] members = new int[cluster.currentSize];
                     System.arraycopy(cluster.currentMembers, 0, members, 0, cluster.currentSize);
-                    clusters.add(new Cluster(members, cluster.center));
+                    clusters.add(new Cluster(members, cluster.center, cluster.getId()+ "-"));
+//                    System.out.println("Cluster created " + c + " " + cluster.getId());
                 } else {
                     emptyClustersDeleted++;
                 }
@@ -310,7 +317,13 @@ public class KMeansClusterer extends AbstractClusterer {
         for (int i = 0; i < seedCount; i++) {
             double[] center = new double[tupleLength];
             seeds.getTuple(i, center);
-            protoClusters[i] = new ProtoCluster(center);
+//            System.out.println("protoClusters created " + i);
+            if (clusters == null)
+                protoClusters[i] = new ProtoCluster(center, Integer.toString(i));
+            else {
+                protoClusters[i] = new ProtoCluster(center, clusters.get(i).getId());
+            }
+
         }
 
     }
@@ -404,7 +417,7 @@ public class KMeansClusterer extends AbstractClusterer {
                         if (clusterToSplit.currentSize > 1) {
 
                             checkForCancel();
-
+//                            System.out.println("split");
                             ProtoCluster[] newClusters = split(clusterToSplit, ph);
 
                             if (newClusters != null && newClusters.length == 2) {
@@ -425,7 +438,6 @@ public class KMeansClusterer extends AbstractClusterer {
             }
 
         }
-
         return emptyClustersReplaced;
     }
 
@@ -471,7 +483,8 @@ public class KMeansClusterer extends AbstractClusterer {
                     // The cluster members have to be mapped back to the indexes of tuples.
                     members[j] = filteredTuples.getFilteredIndex(c.getMember(j));
                 }
-                result[i] = new ProtoCluster(members, c.getCenter());
+//                System.out.println("being split " + c + " " + i);
+                result[i] = new ProtoCluster(members, c.getCenter(), c.getId() + Integer.toString(i));
             }
 
         } else if (splitterOutcome == TaskOutcome.ERROR) {
@@ -606,7 +619,7 @@ public class KMeansClusterer extends AbstractClusterer {
     private double computeProtoClusterBIC(ProtoCluster protoCluster) {
         int[] membershipCopy = new int[protoCluster.currentSize];
         System.arraycopy(protoCluster.currentMembers, 0, membershipCopy, 0, protoCluster.currentSize);
-        return ClusterStats.computeBIC(tuples, new Cluster(membershipCopy, protoCluster.center));
+        return ClusterStats.computeBIC(tuples, new Cluster(membershipCopy, protoCluster.center, protoCluster.getId()));
     }
 
     private class SubtaskManager {
@@ -814,13 +827,26 @@ public class KMeansClusterer extends AbstractClusterer {
 
         private boolean assignmentCandidate = true;
 
-        private ProtoCluster(double[] center) {
-            this.center = (double[]) center.clone();
+        public void setId(String id) {
+            this.id = id;
         }
 
-        private ProtoCluster(int[] members, double[] center) {
+        public String getId() {
+
+            return id;
+        }
+
+        private String id;
+
+        private ProtoCluster(double[] center, String id) {
+            this.center = (double[]) center.clone();
+            this.id = id;
+        }
+
+        private ProtoCluster(int[] members, double[] center, String id) {
             this.currentMembers = (int[]) members.clone();
             this.center = (double[]) center.clone();
+            this.id = id;
         }
 
         private int size() {

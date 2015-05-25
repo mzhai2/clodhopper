@@ -219,7 +219,7 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
             for (int j = 0; j < memCount; j++) {
                 indexes[j] = fcs.getFilteredIndex(c.getMember(j));
             }
-            clusterList.add(new Cluster(indexes, c.getCenter()));
+            clusterList.add(new Cluster(indexes, c.getCenter(), cluster.getId() + Integer.toString(i)));
         }
 
         return clusterList;

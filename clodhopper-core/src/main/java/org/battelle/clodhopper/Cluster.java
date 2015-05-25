@@ -55,6 +55,15 @@ public class Cluster {
     private final int[] ids;
     // The geometric center of the cluster.
     private final double[] center;
+    private String id;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     /**
      * Constructor
@@ -64,6 +73,14 @@ public class Cluster {
      * @param center the geometric center of the cluster, which also cannot be
      * null.
      */
+    public Cluster(final int[] ids, final double[] center, String id) {
+        Objects.requireNonNull(ids);
+        Objects.requireNonNull(center);
+        this.ids = Arrays.copyOf(ids, ids.length);
+        this.center = Arrays.copyOf(center, center.length);
+        Arrays.sort(this.ids);
+        this.id = id;
+    }
     public Cluster(final int[] ids, final double[] center) {
         Objects.requireNonNull(ids);
         Objects.requireNonNull(center);
@@ -71,7 +88,6 @@ public class Cluster {
         this.center = Arrays.copyOf(center, center.length);
         Arrays.sort(this.ids);
     }
-
     /**
      * Get the length of the cluster center.
      *

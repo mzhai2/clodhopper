@@ -175,7 +175,7 @@ public class KMeansPlusPlusSeeder extends RandomSeeder {
 		TupleList seeds = new ArrayTupleList(tupleLength, seedsFound);
 		
 		Arrays.sort(seedList, 0, seedsFound);
-		
+
 		for (int i=0; i<seedsFound; i++) {
 			tuples.getTuple(seedList[i], buffer1);
 			seeds.setTuple(i, buffer1);
