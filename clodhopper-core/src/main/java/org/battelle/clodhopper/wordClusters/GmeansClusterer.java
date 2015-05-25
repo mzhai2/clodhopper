@@ -24,43 +24,25 @@ import org.battelle.clodhopper.tuple.TupleListFactory;
 public class GmeansClusterer {
 
     public static void main(String[] args) {
-//        String path = "/home/mzhai/cluster/";
-        String path = "/Users/mike/Desktop/cluster/";
-//        String matrix = "glove.6B.300d";
-//        String matrix = "10000x300";
-//        String matrix = "glove.840B.300d";
+
         long start_time = System.nanoTime();
-        createCSV(args[0], path);
+        File data = new File(args[0]);
+        File csv = new File(args[0] + ".csv");
+        createCSV(data, csv);
         long end_time = System.nanoTime();
         double difference = (end_time - start_time)/1e9;
         System.out.println("csv processing complete in " + difference + "seconds");
         System.out.println(661001572/difference + " tokens/second");
-        clusterGmeans(args[0], path, Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+        clusterGmeans(Integer.parseInt(args[1]), Integer.parseInt(args[2]), data, csv);
     }
 
-    private static Map<Integer, String> createDict(String matrix, String path) {
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(path+matrix));
 
-            Map<Integer, String> dict = new HashMap<>();
-            String line;
-            for (int i=0; (line = br.readLine()) != null; i++) {
-                line = line.substring(0, line.indexOf(" "));
-                dict.put(i, line);
-            }
-            return dict;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private static void createCSV(String matrix, String path) {
-        if (new File(path + matrix + ".csv").exists())
+    private static void createCSV(File data, File csv) {
+        if (csv.exists())
             return;
         try {
-            BufferedReader bf = new BufferedReader(new FileReader(path + matrix));
-            BufferedWriter bw = new BufferedWriter(new FileWriter(path + matrix + ".csv"));
+            BufferedReader bf = new BufferedReader(new FileReader(data));
+            BufferedWriter bw = new BufferedWriter(new FileWriter(csv));
             int availProc = Runtime.getRuntime().availableProcessors();
             ExecutorService pool =  Executors.newFixedThreadPool(availProc);
             String line;
@@ -180,13 +162,11 @@ public class GmeansClusterer {
         }
     }
 
-
-
-    private static void clusterGmeans(String matrix, String path, int min, int max) {
+    private static void clusterGmeans(int min, int max, File data, File csv) {
         try {
-            Map<Integer, String> dict = createDict(matrix, path);
+            Map<Integer, String> dict = createDict(data);
             TupleListFactory factory = new ArrayTupleListFactory();
-            TupleList tuples = TupleIO.loadCSV(new File(path + matrix + ".csv"), "myData", factory);
+            TupleList tuples = TupleIO.loadCSV(csv, "myData", factory);
             GMeansParams.Builder builder = new GMeansParams.Builder();
             GMeansParams params = builder.clusterSeeder(new KMeansPlusPlusSeeder(1, new Random(), new CosineDistanceMetric()))
                     .maxClusters(max)
@@ -230,9 +210,15 @@ public class GmeansClusterer {
                 List<Cluster> clusters = gMeans.get();
                 final int clusterCount = clusters.size();
                 System.out.printf("\nG-Means Generated %d Clusters\n\n", clusterCount);
-                BufferedWriter resultWriter = new BufferedWriter(new FileWriter(path + matrix + '_' + min + '_' + max + ".keys"));
-                BufferedWriter readableWriter = new BufferedWriter(new FileWriter(path + matrix + '_' + min + '_' + max + ".readable"));
-                BufferedWriter clusterWriter = new BufferedWriter(new FileWriter(path + matrix + '_' + min + '_' + max + ".cluster"));
+                String rootPath = data.getParentFile().getParent();
+                File keyFile = new File(rootPath + "/results/" + data.getName()+ '/' + min + '_' + max + "/keys");
+                keyFile.getParentFile().mkdirs();
+                String resultPath = keyFile.getParent();
+                File readableFile = new File(resultPath + "/readable");
+                File clusterFile = new File(resultPath + "/cluster");
+                BufferedWriter keyWriter = new BufferedWriter(new FileWriter(keyFile));
+                BufferedWriter readableWriter = new BufferedWriter(new FileWriter(readableFile));
+                BufferedWriter clusterWriter = new BufferedWriter(new FileWriter(clusterFile));
                 for (int i = 0; i < clusterCount; i++) {
                     Cluster c = clusters.get(i);
                     StringBuilder sb = new StringBuilder();
@@ -249,25 +235,36 @@ public class GmeansClusterer {
                                 id = c.getId();}
                         sb.append(c.getMember(j));
                     }
-                    resultWriter.write(sb.toString());
+                    keyWriter.write(sb.toString());
                     toReadable(id, sb.toString(), dict, readableWriter);
                     toCluster(id, sb.toString(), dict, clusterWriter);
                     if (i != clusterCount-1) {
-                        resultWriter.write('\n');
+                        keyWriter.write('\n');
                         readableWriter.write('\n');
                     }
                 }
-                resultWriter.close();
-
+                keyWriter.close();
+                readableWriter.close();
+                clusterWriter.close();
             } else if (gMeans.getTaskOutcome() == TaskOutcome.ERROR) {
                 System.out.printf("G-Means ended with the following error: %s\n", gMeans.getErrorMessage());
             } else {
                 System.out.printf("G-Means ended with the unexpected outcome of: %s\n", gMeans.getTaskOutcome());
             }
-
         }   catch (Throwable t) {
             t.printStackTrace();
         }
+    }
+
+    private static Map<Integer, String> createDict(File data) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(data));
+        Map<Integer, String> dict = new HashMap<>();
+        String line;
+        for (int i=0; (line = br.readLine()) != null; i++) {
+            line = line.substring(0, line.indexOf(" "));
+            dict.put(i, line);
+        }
+        return dict;
     }
 
     private static void toCluster(String id, String s, Map<Integer, String> dict, BufferedWriter bw) {
