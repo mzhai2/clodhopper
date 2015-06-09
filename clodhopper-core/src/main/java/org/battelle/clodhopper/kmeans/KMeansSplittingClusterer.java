@@ -345,9 +345,18 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
     private void cleanID(List<Cluster> clusters) {
         for (Cluster cluster : clusters) {
             String id = cluster.getId();
-            char code = (char)Integer.parseInt(id.substring(0, id.indexOf("-"))+33);
-//            System.out.println(code);
-            cluster.setId(Character.toString(code)+id.substring(id.indexOf("-")+1).replaceAll("-", ""));
+            int prefix = Integer.parseInt(id.substring(0,id.indexOf("-")));
+            String prefixString = id.substring(0,id.indexOf("-"));
+            if (prefix < 10)
+                prefixString = '0' + prefixString;
+//            char code = (char)Integer.parseInt(id.substring(0, id.indexOf("-")));
+//            cluster.setId(Character.toString(code)+id.substring(id.indexOf("-")+1).replaceAll("-", ""));
+            id = prefixString + '-' + id.substring(id.indexOf("-")).replaceAll("-", "");
+            if (id.charAt(id.length()-1) == '-')
+                id = id.substring(0, id.length()-1);
+            cluster.setId(id);
+
+            System.out.println(cluster.getId());
         }
     }
 

@@ -1,5 +1,6 @@
 package org.battelle.clodhopper.wordClusters;
 
+import org.apache.log4j.BasicConfigurator;
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.distance.CosineDistanceMetric;
 import org.battelle.clodhopper.gmeans.GMeansClusterer;
@@ -23,21 +24,44 @@ import org.battelle.clodhopper.tuple.TupleListFactory;
  */
 public class GmeansClusterer {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
+        BasicConfigurator.configure();
         long start_time = System.nanoTime();
         File data = new File(args[0]);
-        File csv = new File(args[0] + ".csv");
+        System.out.println(data.getCanonicalPath().substring(0, data.getCanonicalPath().lastIndexOf(".")) + ".csv");
+        File csv = new File(data.getCanonicalPath().substring(0, data.getCanonicalPath().lastIndexOf(".")) + ".csv");
         createCSV(data, csv);
         long end_time = System.nanoTime();
         double difference = (end_time - start_time)/1e9;
         System.out.println("csv processing complete in " + difference + "seconds");
         System.out.println(661001572/difference + " tokens/second");
-        clusterGmeans(Integer.parseInt(args[1]), Integer.parseInt(args[2]), data, csv);
+        clusterGmeans(Integer.parseInt(args[1]), Integer.parseInt(args[2]), data, csv, args[3]);
     }
 
-
     private static void createCSV(File data, File csv) {
+        if (csv.exists())
+            return;
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(data));
+            BufferedWriter bw = new BufferedWriter(new FileWriter(csv));
+            String line;
+            br.readLine(); // skip first line vocab + dim
+            while ((line=br.readLine())!=null) {
+                line = line.substring(line.indexOf(" ")+1, line.length()-1).replaceAll(" ", ",");
+                bw.write(line);
+                bw.newLine();
+            }
+            bw.close();
+
+            } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+            } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void createNormalizedCSV(File data, File csv) {
         if (csv.exists())
             return;
         try {
@@ -162,7 +186,7 @@ public class GmeansClusterer {
         }
     }
 
-    private static void clusterGmeans(int min, int max, File data, File csv) {
+    private static void clusterGmeans(int min, int max, File data, File csv, String outputDir) {
         try {
             Map<Integer, String> dict = createDict(data);
             TupleListFactory factory = new ArrayTupleListFactory();
@@ -210,12 +234,10 @@ public class GmeansClusterer {
                 List<Cluster> clusters = gMeans.get();
                 final int clusterCount = clusters.size();
                 System.out.printf("\nG-Means Generated %d Clusters\n\n", clusterCount);
-                String rootPath = data.getParentFile().getParent();
-                File keyFile = new File(rootPath + "/results/" + data.getName()+ '/' + min + '_' + max + "/keys");
+                File keyFile = new File(outputDir + min + '_' + max + ".keys");
                 keyFile.getParentFile().mkdirs();
-                String resultPath = keyFile.getParent();
-                File readableFile = new File(resultPath + "/readable");
-                File clusterFile = new File(resultPath + "/cluster");
+                File readableFile = new File(outputDir + min + '_' + max + ".readable");
+                File clusterFile = new File(outputDir + min + '_' + max + ".cluster");
                 BufferedWriter keyWriter = new BufferedWriter(new FileWriter(keyFile));
                 BufferedWriter readableWriter = new BufferedWriter(new FileWriter(readableFile));
                 BufferedWriter clusterWriter = new BufferedWriter(new FileWriter(clusterFile));
@@ -276,6 +298,7 @@ public class GmeansClusterer {
                 if (i != keys.length-1)
                     bw.write('\n');
                 }
+            bw.newLine();
             bw.flush();
         } catch (IOException e) {
             e.printStackTrace();
