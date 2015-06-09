@@ -53,7 +53,6 @@ public class GmeansClusterer {
                 bw.newLine();
             }
             bw.close();
-
             } catch (FileNotFoundException e) {
                     e.printStackTrace();
             } catch (IOException e) {
@@ -189,6 +188,7 @@ public class GmeansClusterer {
     private static void clusterGmeans(int min, int max, File data, File csv, String outputDir) {
         try {
             Map<Integer, String> dict = createDict(data);
+            Map<Integer, String> vDict = createVectorDict(data);
             TupleListFactory factory = new ArrayTupleListFactory();
             TupleList tuples = TupleIO.loadCSV(csv, "myData", factory);
             GMeansParams.Builder builder = new GMeansParams.Builder();
@@ -247,9 +247,8 @@ public class GmeansClusterer {
                     final int memberCount = c.getMemberCount();
                     String id = null;
                     for (int j = 0; j < memberCount; j++) {
-                        if (j > 0) {
+                        if (j > 0)
                             sb.append(",");
-                        }
                         else {
                             if (min == 1)
                                  id = c.getId().substring(1);
@@ -259,7 +258,7 @@ public class GmeansClusterer {
                     }
                     keyWriter.write(sb.toString());
                     toReadable(id, sb.toString(), dict, readableWriter);
-                    toCluster(id, sb.toString(), dict, clusterWriter);
+                    toCluster(id, sb.toString(), dict, vDict, clusterWriter);
                     if (i != clusterCount-1) {
                         keyWriter.write('\n');
                         readableWriter.write('\n');
@@ -289,12 +288,23 @@ public class GmeansClusterer {
         return dict;
     }
 
-    private static void toCluster(String id, String s, Map<Integer, String> dict, BufferedWriter bw) {
+    private static Map<Integer, String> createVectorDict(File data) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(data));
+        Map<Integer, String> dict = new HashMap<>();
+        String line;
+        for (int i=0; (line = br.readLine()) != null; i++) {
+            line = line.substring(line.indexOf(" ")+1, line.length()-1).replaceAll(" ", ",");
+            dict.put(i, line);
+        }
+        return dict;
+    }
+
+    private static void toCluster(String id, String s, Map<Integer, String> dict, Map<Integer, String> vDict, BufferedWriter bw) {
         try {
             String[] keys = s.split(",");
             for (int i=0; i<keys.length; i++) {
                 String key = keys[i];
-                bw.write(id + ' ' + dict.get(Integer.parseInt(key)));
+                bw.write(id + ',' + dict.get(Integer.parseInt(key)) + ',' + vDict.get(Integer.parseInt(key)));
                 if (i != keys.length-1)
                     bw.write('\n');
                 }
